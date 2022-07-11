@@ -1,8 +1,8 @@
 #!/bin/bash
 
 CONFIGPATH='./configs/pstr/pstr_r50_24e_prw.py'
-MODELPATH='work_dirs/0705/latest.pth'
-OUTPATH='work_dirs/0705/pstr_results.pkl'
+MODELPATH='work_dirs/pstr_r50_prw-a4527732.pth'
+OUTPATH='work_dirs/pstr_r50_prw-a4527732.pkl'
 echo $TESTPATH $TESTNAME
 
 i=24

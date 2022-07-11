@@ -125,7 +125,7 @@ def main(det_thresh=0.05, gallery_size=-1, ignore_cam_id=True, input_path=None, 
 
     # change here
     # results_path = './work_dirs/' + input_path
-    data_root='./data/PRW-v16.04.20/'
+    data_root='data/person_search/PRW/'
     probe_set = load_probes(data_root)
     gallery_set = gt_roidbs(data_root)
 

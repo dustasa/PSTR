@@ -65,7 +65,7 @@ class PSTRMapper(BaseModule):
                 in_channels[i],
                 out_channels,
                 kernel_size=1 if i == 2 else kernel_size,
-                padding=0 if i == 2 else (kernel_size-1)//2,
+                padding=0 if i == 2 else (kernel_size - 1) // 2,
                 conv_cfg=conv_cfg,
                 norm_cfg=norm_cfg,
                 act_cfg=act_cfg,
@@ -80,7 +80,6 @@ class PSTRMapper(BaseModule):
             )
             self.lateral_convs.append(l_conv)
             self.convs.append(conv)
-
 
     def forward(self, inputs):
         """Forward function."""

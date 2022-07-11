@@ -23,7 +23,7 @@ model = dict(
         num_query=100,
         num_person=483,
         queue_size=500,
-        cat_weight=[0.5,1.0,1.0],
+        cat_weight=[0.5, 1.0, 1.0],
         num_classes=1,
         in_channels=256,
         sync_cls_avg_factor=True,
@@ -149,12 +149,12 @@ test_pipeline = [
         ])
 ]
 # change the path of the datasetz
-data_root = './data/PRW-v16.04.20/'
+data_root = 'data/person_search/PRW/'
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
-        ann_file=data_root + 'train_pid.json', # change the path of the annotation file
+        ann_file=data_root + 'train_pid.json',  # change the path of the annotation file
         img_prefix=data_root + 'frames/',
         pipeline=train_pipeline),
     val=dict(
@@ -164,14 +164,14 @@ data = dict(
     test=dict(
         ann_file=data_root + 'test_pid.json',  # change the path of the annotation file
         img_prefix=data_root + 'frames/',
-        proposal_file=data_root+'annotation/test/train_test/TestG50.mat',
+        proposal_file=data_root + 'frame_test.mat',
         pipeline=test_pipeline)
 )
 
 # optimizer
 optimizer = dict(
     type='AdamW',
-    lr=1e-4,
+    lr=2e-4,
     weight_decay=0.0001,
     paramwise_cfg=dict(
         custom_keys={

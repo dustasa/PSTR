@@ -8,13 +8,14 @@ from PIL import Image
 import pickle
 import re
 import sys
-#from numba import jit
+# from numba import jit
 from km import run_kuhn_munkres
 
 from sklearn.metrics import average_precision_score
 from sklearn.preprocessing import normalize
 
 from iou_utils import get_max_iou
+
 
 def compute_iou(a, b):
     x1 = max(a[0], b[0])
@@ -25,6 +26,7 @@ def compute_iou(a, b):
     union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
     return inter * 1.0 / union
 
+
 def set_box_pid(boxes, box, pids, pid):
     for i in range(boxes.shape[0]):
         if np.all(boxes[i] == box):
@@ -32,10 +34,12 @@ def set_box_pid(boxes, box, pids, pid):
             return
     print("Person: %s, box: %s cannot find in images." % (pid, box))
 
+
 def image_path_at(data_path, image_index, i):
     image_path = osp.join(data_path, image_index[i])
     assert osp.isfile(image_path), "Path does not exist: %s" % image_path
     return image_path
+
 
 def load_image_index(root_dir, db_name):
     """Load the image indexes for training / testing."""
@@ -56,9 +60,11 @@ def load_image_index(root_dir, db_name):
     train.sort()
     return train
 
+
 def _get_cam_id(im_name):
-        match = re.search('c\d', im_name).group().replace('c', '')
-        return int(match)
+    match = re.search('c\d', im_name).group().replace('c', '')
+    return int(match)
+
 
 def load_probes(root):
     query_info = osp.join(root, 'query_info.txt')
@@ -75,17 +81,17 @@ def load_probes(root):
         roi = np.clip(roi, 0, None)  # several coordinates are negative
         im_name = linelist[5][:-1] + '.jpg'
         probes.append({'im_name': im_name,
-                        'boxes': roi[np.newaxis, :],
-                        # Useless. Can be set to any value.
-                        'gt_pids': np.array([pid]),
-                        'flipped': False,
-                        'cam_id': _get_cam_id(im_name)
-                        })
+                       'boxes': roi[np.newaxis, :],
+                       # Useless. Can be set to any value.
+                       'gt_pids': np.array([pid]),
+                       'flipped': False,
+                       'cam_id': _get_cam_id(im_name)
+                       })
 
     return probes
 
-def gt_roidbs(root):
 
+def gt_roidbs(root):
     imgs = loadmat(osp.join(root, 'frame_test.mat'))['img_index_test']
     imgs = [img[0][0] + '.jpg' for img in imgs]
 
@@ -120,15 +126,14 @@ def gt_roidbs(root):
         })
     return gt_roidb
 
+
 # @jit(forceobj=True)
 def main(det_thresh=0.05, gallery_size=-1, ignore_cam_id=True, input_path=None):
-
     # change here
     # results_path = './work_dirs/' + input_path
-    data_root='./data/PRW-v16.04.20/'
+    data_root = 'data/person_search/PRW/'
     probe_set = load_probes(data_root)
     gallery_set = gt_roidbs(data_root)
-
 
     name_id = dict()
     for i, gallery in enumerate(gallery_set):
@@ -159,7 +164,6 @@ def main(det_thresh=0.05, gallery_size=-1, ignore_cam_id=True, input_path=None):
         det0 = gallery_det[id]
         feat0 = gallery_feat[id]
 
-
         iou, iou_max, nmax = get_max_iou(det0, query_gt_box)
         if iou_max < 0.1:
             print("not detected", name, iou_max)
@@ -167,33 +171,30 @@ def main(det_thresh=0.05, gallery_size=-1, ignore_cam_id=True, input_path=None):
         feat = feat0[nmax]
         probe_feat.append(feat)
 
-
-
-
         # ids1 = (inds != nmax)
         # inds = np.append(nmax,inds[ids1])
         # query_feat.append()
         # query_det.append(det[inds])
 
-
     # gallery_det, gallery_feat = [], []
     # for det in all_dets:
-        # det[0] = det[0][det[0][:, 4]>thresh]
-        # gallery_det.append(det[0][:, :5])
-        # if det[0].shape[0] > 0:
-        #     feat = normalize(det[0][:, 5:], axis=1)
-        # else:
-        #     feat = det[0][:, 5:]
-        # feat = normalize(det[0][:, 5:], axis=1)
-        # gallery_feat.append(feat)
+    # det[0] = det[0][det[0][:, 4]>thresh]
+    # gallery_det.append(det[0][:, :5])
+    # if det[0].shape[0] > 0:
+    #     feat = normalize(det[0][:, 5:], axis=1)
+    # else:
+    #     feat = det[0][:, 5:]
+    # feat = normalize(det[0][:, 5:], axis=1)
+    # gallery_feat.append(feat)
 
-    search_performance_calc(gallery_set, probe_set, gallery_det, gallery_feat, probe_feat, det_thresh, gallery_size, ignore_cam_id)
+    search_performance_calc(gallery_set, probe_set, gallery_det, gallery_feat, probe_feat, det_thresh, gallery_size,
+                            ignore_cam_id)
+
 
 # @jit(forceobj=True)
 def search_performance_calc(gallery_set, probe_set,
-                                gallery_det, gallery_feat, probe_feat,
-                                det_thresh=0.5, gallery_size=-1, ignore_cam_id=True):
-
+                            gallery_det, gallery_feat, probe_feat,
+                            det_thresh=0.5, gallery_size=-1, ignore_cam_id=True):
     assert len(gallery_set) == len(gallery_det)
     assert len(gallery_set) == len(gallery_feat)
     assert len(probe_set) == len(probe_feat)
@@ -272,8 +273,8 @@ def search_performance_calc(gallery_set, probe_set,
                 gt = probe_gts[gallery_imname].ravel()
                 w, h = gt[2] - gt[0], gt[3] - gt[1]
                 iou_thresh = min(0.5, (w * h * 1.0) /
-                                    ((w + 10) * (h + 10)))
-                #iou_thresh = min(0.3, (w * h * 1.0) /
+                                 ((w + 10) * (h + 10)))
+                # iou_thresh = min(0.3, (w * h * 1.0) /
                 #                    ((w + 10) * (h + 10)))
                 inds = np.argsort(sim)[::-1]
                 sim = sim[inds]
@@ -288,7 +289,6 @@ def search_performance_calc(gallery_set, probe_set,
             y_score.extend(list(sim))
             imgs.extend([gallery_imname] * len(sim))
             rois.extend(list(det))
-
 
         # 2. Compute AP for this probe (need to scale by recall rate)
         y_score = np.asarray(y_score)
@@ -323,8 +323,6 @@ def search_performance_calc(gallery_set, probe_set,
     accs = np.mean(accs, axis=0)
     for i, k in enumerate(topk):
         print('  top-{:2d} = {:.2%}'.format(k, accs[i]))
-
-
 
 
 if __name__ == "__main__":

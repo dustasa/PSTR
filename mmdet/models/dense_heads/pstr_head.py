@@ -14,6 +14,7 @@ from .detr_reid_head import DETRReIDHead
 from .reid_matching_layer import LabeledMatchingLayer, LabeledMatchingLayerQ, UnlabeledMatchingLayer
 from .triplet_loss import TripletLossFilter
 
+
 @HEADS.register_module()
 class PSTRHead(DETRReIDHead):
     """Head of DeformDETR: Deformable DETR: Deformable Transformers for End-to-
@@ -41,7 +42,7 @@ class PSTRHead(DETRReIDHead):
                  transformer=None,
                  num_person=483,
                  queue_size=500,
-                 cat_weight=[1.0,1.0,1.0],
+                 cat_weight=[1.0, 1.0, 1.0],
                  flag_tri=False,
                  **kwargs):
         self.with_box_refine = with_box_refine
@@ -92,7 +93,7 @@ class PSTRHead(DETRReIDHead):
         self.temperature = 15
         self.reid_embeds = 256
         self.labeled_matching_layers = nn.ModuleList([])
-        self.unlabeled_matching_layers =nn.ModuleList([])
+        self.unlabeled_matching_layers = nn.ModuleList([])
         for i in range(3):
             labeled_matching_layer = LabeledMatchingLayerQ(num_persons=self.num_person, feat_len=self.reid_embeds)
             unlabeled_matching_layer = UnlabeledMatchingLayer(queue_size=self.queue_size, feat_len=self.reid_embeds)
@@ -163,15 +164,15 @@ class PSTRHead(DETRReIDHead):
         if not self.as_two_stage:
             query_embeds = self.query_embedding.weight
         hs, hs_reid, init_reference, inter_references, \
-            enc_outputs_class, enc_outputs_coord = self.transformer(
-                    mlvl_feats,
-                    mlvl_masks,
-                    query_embeds,
-                    mlvl_positional_encodings,
-                    reg_branches=self.reg_branches,# if self.with_box_refine else None,  # noqa:E501
-                    cls_branches=self.cls_branches if self.as_two_stage else None,  # noqa:E501
-                    with_box_refine=self.with_box_refine
-            )
+        enc_outputs_class, enc_outputs_coord = self.transformer(
+            mlvl_feats,
+            mlvl_masks,
+            query_embeds,
+            mlvl_positional_encodings,
+            reg_branches=self.reg_branches,  # if self.with_box_refine else None,  # noqa:E501
+            cls_branches=self.cls_branches if self.as_two_stage else None,  # noqa:E501
+            with_box_refine=self.with_box_refine
+        )
         hs = hs.permute(0, 2, 1, 3)
         outputs_classes = []
         outputs_coords = []
@@ -209,14 +210,13 @@ class PSTRHead(DETRReIDHead):
             outputs_reid = outputs_reid - torch.mean(outputs_reid, dim=2, keepdim=True)
             outputs_reids.append(outputs_reid)
 
-
         if self.as_two_stage:
             return outputs_classes, outputs_coords, \
-                enc_outputs_class, \
-                enc_outputs_coord.sigmoid()
+                   enc_outputs_class, \
+                   enc_outputs_coord.sigmoid()
         else:
             return outputs_classes, outputs_coords, outputs_reids, \
-                None, None
+                   None, None
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def loss(self,
@@ -271,8 +271,7 @@ class PSTRHead(DETRReIDHead):
         ]
         img_metas_list = [img_metas for _ in range(num_dec_layers)]
 
-
-        all_reid_feats_list = torch.stack(all_reid_feats,dim=2)
+        all_reid_feats_list = torch.stack(all_reid_feats, dim=2)
 
         losses_cls, losses_bbox, losses_iou, labels_ids_list, ids_pos_list = multi_apply(
             self.loss_single, all_cls_scores, all_bbox_preds, all_reid_feats_list,
@@ -286,11 +285,13 @@ class PSTRHead(DETRReIDHead):
             for s in range(len(all_reid_feats) - 1, -1, -1):
                 if ids_pos_list[lvl].sum() > 0:
                     if self.flag_tri:
-                        loss_oim, loss_tri = self.loss_reid_single(all_reid_feats[s][lvl], s, labels_ids_list[lvl], ids_pos_list[lvl])
+                        loss_oim, loss_tri = self.loss_reid_single(all_reid_feats[s][lvl], s, labels_ids_list[lvl],
+                                                                   ids_pos_list[lvl])
                         loss_dict[f'd{lvl}.loss_reid_s{s}'] = 0.5 * loss_oim
                         loss_dict[f'd{lvl}.loss_tri_s{s}'] = 0.5 * loss_tri
                     else:
-                        loss_oim = self.loss_reid_single(all_reid_feats[s][lvl], s, labels_ids_list[lvl], ids_pos_list[lvl])
+                        loss_oim = self.loss_reid_single(all_reid_feats[s][lvl], s, labels_ids_list[lvl],
+                                                         ids_pos_list[lvl])
                         loss_dict[f'd{lvl}.loss_reid_s{s}'] = 0.5 * loss_oim
                 else:
                     if self.flag_tri:
@@ -329,7 +330,6 @@ class PSTRHead(DETRReIDHead):
             loss_dict[f'd{num_dec_layer}.loss_iou'] = loss_iou_i
             num_dec_layer += 1
         return loss_dict
-
 
     def loss_single(self,
                     cls_scores,
@@ -422,9 +422,6 @@ class PSTRHead(DETRReIDHead):
             bbox_preds, bbox_targets, bbox_weights, avg_factor=num_total_pos)
         return loss_cls, loss_bbox, loss_iou, labels_ids_list, pos_idxs
 
-
-
-
     def loss_reid_single(self,
                          reid_feats,
                          idx,
@@ -436,7 +433,8 @@ class PSTRHead(DETRReIDHead):
         reid_feats = F.normalize(reid_feats)
         labels_ids = torch.cat(labels_ids_list, 0)
         labels_ids = labels_ids[pos_inds]
-        labeled_matching_scores, labeled_matching_reid, labeled_matching_ids = self.labeled_matching_layers[idx](reid_feats, labels_ids)
+        labeled_matching_scores, labeled_matching_reid, labeled_matching_ids = self.labeled_matching_layers[idx](
+            reid_feats, labels_ids)
         labeled_matching_scores *= self.temperature
         unlabeled_matching_scores = self.unlabeled_matching_layers[idx](reid_feats, labels_ids)
         unlabeled_matching_scores = unlabeled_matching_scores * self.unlabel_weight
@@ -454,8 +452,6 @@ class PSTRHead(DETRReIDHead):
             return loss_oim, loss_tri
 
         return loss_oim
-
-
 
     def get_targets(self,
                     cls_scores_list,
@@ -507,7 +503,6 @@ class PSTRHead(DETRReIDHead):
             gt_bboxes_ignore_list for _ in range(num_imgs)
         ]
 
-
         (labels_list, label_weights_list, bbox_targets_list,
          bbox_weights_list, label_ids_list, pos_inds_list, neg_inds_list) = multi_apply(
             self._get_target_single, cls_scores_list, bbox_preds_list, reid_feats_list,
@@ -517,8 +512,6 @@ class PSTRHead(DETRReIDHead):
         num_total_neg = sum((inds.numel() for inds in neg_inds_list))
         return (labels_list, label_weights_list, bbox_targets_list,
                 bbox_weights_list, label_ids_list, num_total_pos, num_total_neg)
-
-
 
     def _get_target_single(self,
                            cls_score,
@@ -565,7 +558,6 @@ class PSTRHead(DETRReIDHead):
             lookup_table.append(self.labeled_matching_layers[s].lookup_table)
             queue.append(self.unlabeled_matching_layers[s].queue)
 
-
         assign_result = self.assigner.assign(bbox_pred, cls_score, reid_feat, lookup_table, queue, gt_bboxes,
                                              gt_labels, gt_ids, img_meta,
                                              gt_bboxes_ignore)
@@ -601,7 +593,6 @@ class PSTRHead(DETRReIDHead):
         pos_gt_bboxes_targets = bbox_xyxy_to_cxcywh(pos_gt_bboxes_normalized)
         bbox_targets[pos_inds] = pos_gt_bboxes_targets
         return (labels, label_weights, bbox_targets, bbox_weights, label_ids, pos_inds, neg_inds)
-
 
     @force_fp32(apply_to=('all_cls_scores_list', 'all_bbox_preds_list'))
     def get_bboxes(self,
@@ -643,8 +634,8 @@ class PSTRHead(DETRReIDHead):
         """
         cls_scores = all_cls_scores[-1]
         bbox_preds = all_bbox_preds[-1]
-        reid_feats = torch.cat([self.cat_weight[0]*all_reid_feats[0][-1], self.cat_weight[1]*all_reid_feats[1][-1], self.cat_weight[2]*all_reid_feats[2][-1]], dim=2)#
-
+        reid_feats = torch.cat([self.cat_weight[0] * all_reid_feats[0][-1], self.cat_weight[1] * all_reid_feats[1][-1],
+                                self.cat_weight[2] * all_reid_feats[2][-1]], dim=2)  #
 
         result_list = []
         for img_id in range(len(img_metas)):
