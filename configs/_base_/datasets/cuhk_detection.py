@@ -1,6 +1,6 @@
 dataset_type = 'CuhkDataset'
 # change to you own path
-data_root = './data/cuhk/'
+data_root = 'data/person_search/cuhk_sysu/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [

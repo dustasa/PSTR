@@ -150,10 +150,10 @@ test_pipeline = [
 ]
 
 # change the path of the datasetz
-data_root = './data/cuhk/'
+data_root = 'data/person_search/cuhk_sysu/'
 data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=2,
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         ann_file=data_root + 'annotation/train_pid_new.json', # change the path of the annotation file
         img_prefix=data_root + 'Image/SSM/',
@@ -171,7 +171,7 @@ data = dict(
 # optimizer
 optimizer = dict(
     type='AdamW',
-    lr=1e-4,
+    lr=2e-4,
     weight_decay=0.0001,
     paramwise_cfg=dict(
         custom_keys={
